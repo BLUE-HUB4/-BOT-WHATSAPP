@@ -1,0 +1,355 @@
+const fs = require('fs');
+const path = require('path');
+
+const filePath = path.join(__dirname, '../../data/investments.json');
+
+const DEFAULT_ASSETS = {
+    gojo: {
+        name: 'GOJO TECH',
+        emoji: '🔵',
+        price: 1000,
+        risk: 'Médio',
+        dividend: 0.02
+    },
+
+    meliodas: {
+        name: 'MELIODAS CORP',
+        emoji: '🟢',
+        price: 800,
+        risk: 'Baixo',
+        dividend: 0.03
+    },
+
+    sukuna: {
+        name: 'SUKUNA ENERGY',
+        emoji: '🔴',
+        price: 1500,
+        risk: 'Alto',
+        dividend: 0.01
+    },
+
+    cursed: {
+        name: 'CURSED BANK',
+        emoji: '🟡',
+        price: 600,
+        risk: 'Baixo',
+        dividend: 0.04
+    },
+
+    jujutsu: {
+        name: 'JUJUTSU CORP',
+        emoji: '🟣',
+        price: 1200,
+        risk: 'Médio',
+        dividend: 0.025
+    }
+};
+
+function loadData() {
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(
+            filePath,
+            JSON.stringify({
+                market: {},
+                users: {}
+            }, null, 2)
+        );
+    }
+
+    try {
+        return JSON.parse(
+            fs.readFileSync(filePath, 'utf8')
+        );
+    } catch {
+        return {
+            market: {},
+            users: {}
+        };
+    }
+}
+
+function saveData(data) {
+    fs.writeFileSync(
+        filePath,
+        JSON.stringify(data, null, 2)
+    );
+}
+
+function initializeMarket() {
+    const data = loadData();
+    let changed = false;
+
+    for (const [key, asset] of Object.entries(DEFAULT_ASSETS)) {
+        if (!data.market[key]) {
+            data.market[key] = {
+                ...asset,
+                previousPrice: asset.price,
+                lastUpdate: Date.now()
+            };
+
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        saveData(data);
+    }
+
+    return data.market;
+}
+
+function getAssets() {
+    return initializeMarket();
+}
+
+function getAsset(key) {
+    return initializeMarket()[key];
+}
+
+function getPortfolio(id) {
+    const data = loadData();
+
+    if (!data.users[id]) {
+        data.users[id] = {
+            assets: {},
+            history: [],
+            dividends: 0,
+            totalInvested: 0
+        };
+
+        saveData(data);
+    }
+
+    return data.users[id];
+}
+
+function savePortfolio(id, portfolio) {
+    const data = loadData();
+
+    data.users[id] = portfolio;
+
+    saveData(data);
+}
+
+function buy(id, key, amount) {
+    const asset = getAsset(key);
+
+    if (!asset) {
+        return {
+            success: false,
+            message: 'Ativo não encontrado.'
+        };
+    }
+
+    const portfolio = getPortfolio(id);
+
+    if (!portfolio.assets[key]) {
+        portfolio.assets[key] = {
+            quantity: 0,
+            invested: 0
+        };
+    }
+
+    const quantity = amount / asset.price;
+
+    portfolio.assets[key].quantity += quantity;
+    portfolio.assets[key].invested += amount;
+    portfolio.totalInvested += amount;
+
+    portfolio.history.push({
+        type: 'compra',
+        asset: key,
+        amount: amount,
+        quantity: quantity,
+        price: asset.price,
+        date: Date.now()
+    });
+
+    savePortfolio(id, portfolio);
+
+    return {
+        success: true,
+        quantity: quantity,
+        price: asset.price
+    };
+}
+
+function sell(id, key, quantity) {
+    const asset = getAsset(key);
+
+    if (!asset) {
+        return {
+            success: false,
+            message: 'Ativo não encontrado.'
+        };
+    }
+
+    const portfolio = getPortfolio(id);
+
+    if (!portfolio.assets[key]) {
+        return {
+            success: false,
+            message: 'Você não possui esse ativo.'
+        };
+    }
+
+    const investment = portfolio.assets[key];
+
+    if (investment.quantity < quantity) {
+        return {
+            success: false,
+            message: 'Cotas insuficientes.'
+        };
+    }
+
+    const averagePrice =
+        investment.invested / investment.quantity;
+
+    const value = quantity * asset.price;
+    const cost = quantity * averagePrice;
+    const profit = value - cost;
+
+    investment.quantity -= quantity;
+    investment.invested -= cost;
+
+    if (investment.quantity <= 0.000001) {
+        delete portfolio.assets[key];
+    }
+
+    portfolio.history.push({
+        type: 'venda',
+        asset: key,
+        amount: value,
+        quantity: quantity,
+        price: asset.price,
+        profit: profit,
+        date: Date.now()
+    });
+
+    savePortfolio(id, portfolio);
+
+    return {
+        success: true,
+        value: value,
+        quantity: quantity,
+        price: asset.price,
+        profit: profit
+    };
+}
+
+function updateMarket() {
+    const data = loadData();
+
+    for (const asset of Object.values(data.market)) {
+        const variation =
+            Math.random() * 0.16 - 0.08;
+
+        const oldPrice = asset.price;
+
+        asset.previousPrice = oldPrice;
+
+        asset.price = Math.max(
+            100,
+            Math.round(oldPrice * (1 + variation))
+        );
+
+        asset.lastUpdate = Date.now();
+    }
+
+    saveData(data);
+
+    return data.market;
+}
+
+function getMarketVariation(asset) {
+    if (!asset || !asset.previousPrice) {
+        return 0;
+    }
+
+    return (
+        ((asset.price - asset.previousPrice) /
+        asset.previousPrice) * 100
+    );
+}
+
+function calculatePortfolio(id) {
+    const portfolio = getPortfolio(id);
+    const assets = getAssets();
+
+    let totalValue = 0;
+    let totalInvested = 0;
+
+    for (const [key, investment] of Object.entries(
+        portfolio.assets
+    )) {
+        const asset = assets[key];
+
+        if (!asset) continue;
+
+        totalValue +=
+            investment.quantity * asset.price;
+
+        totalInvested += investment.invested;
+    }
+
+    return {
+        totalValue: totalValue,
+        totalInvested: totalInvested,
+        profit: totalValue - totalInvested
+    };
+}
+
+function collectDividends(id) {
+    const portfolio = getPortfolio(id);
+    const assets = getAssets();
+
+    let total = 0;
+
+    for (const [key, investment] of Object.entries(
+        portfolio.assets
+    )) {
+        const asset = assets[key];
+
+        if (!asset) continue;
+
+        const value =
+            investment.quantity * asset.price;
+
+        total += value * asset.dividend;
+    }
+
+    if (total <= 0) {
+        return 0;
+    }
+
+    portfolio.dividends += total;
+
+    portfolio.history.push({
+        type: 'dividendos',
+        amount: total,
+        date: Date.now()
+    });
+
+    savePortfolio(id, portfolio);
+
+    return total;
+}
+
+function getAllPortfolios() {
+    return loadData().users;
+}
+
+initializeMarket();
+
+module.exports = {
+    getAssets,
+    getAsset,
+    getPortfolio,
+    getAllPortfolios,
+    buy,
+    sell,
+    updateMarket,
+    getMarketVariation,
+    calculatePortfolio,
+    collectDividends
+};

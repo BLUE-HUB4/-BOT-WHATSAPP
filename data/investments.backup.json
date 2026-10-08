@@ -1,0 +1,21 @@
+{
+  "118730445058158@lid": {
+    "assets": {
+      "gojo": {
+        "quantity": 0.0009433962264150943,
+        "invested": 1
+      }
+    },
+    "history": [
+      {
+        "type": "compra",
+        "asset": "gojo",
+        "amount": 1,
+        "quantity": 0.0009433962264150943,
+        "price": 1060,
+        "date": 1791417518590
+      }
+    ],
+    "dividends": 0
+  }
+}

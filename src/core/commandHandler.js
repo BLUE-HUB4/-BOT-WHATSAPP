@@ -1,0 +1,75 @@
+const fs = require('fs');
+const path = require('path');
+const config = require('../../config');
+
+const commands = new Map();
+
+function loadCommands() {
+    const commandsPath = path.join(__dirname, '../commands');
+
+    function scanFolder(folder) {
+        const files = fs.readdirSync(folder);
+
+        for (const file of files) {
+            const fullPath = path.join(folder, file);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isDirectory()) {
+                scanFolder(fullPath);
+                continue;
+            }
+
+            if (!file.endsWith('.js')) continue;
+
+            try {
+                const command = require(fullPath);
+
+                if (!command.name || !command.execute) {
+                    console.log(`⚠️ Comando inválido: ${file}`);
+                    continue;
+                }
+
+                commands.set(command.name.toLowerCase(), command);
+
+                console.log(`✅ Comando carregado: ${command.name}`);
+            } catch (error) {
+                console.error(`❌ Erro ao carregar ${file}:`, error);
+            }
+        }
+    }
+
+    scanFolder(commandsPath);
+
+    console.log(`\n📦 Total de comandos carregados: ${commands.size}\n`);
+}
+
+async function handleCommand(sock, msg, text) {
+    try {
+        const prefix = config.bot.prefix;
+
+        if (!text.startsWith(prefix)) return;
+
+        const input = text.slice(prefix.length).trim();
+
+        if (!input) return;
+
+        const parts = input.split(/\s+/);
+        const commandName = parts.shift().toLowerCase();
+        const args = parts;
+
+        const command = commands.get(commandName);
+
+        if (!command) return;
+
+        console.log(`⚡ Executando comando: ${commandName}`);
+
+        await command.execute(sock, msg, args);
+
+    } catch (error) {
+        console.error('❌ Erro ao executar comando:', error);
+    }
+}
+
+loadCommands();
+
+module.exports = handleCommand;

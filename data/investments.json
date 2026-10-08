@@ -1,0 +1,57 @@
+{
+  "market": {
+    "gojo": {
+      "name": "GOJO TECH",
+      "emoji": "🔵",
+      "price": 1000,
+      "risk": "Médio",
+      "dividend": 0.02,
+      "previousPrice": 1000,
+      "lastUpdate": 1791424078480
+    },
+    "meliodas": {
+      "name": "MELIODAS CORP",
+      "emoji": "🟢",
+      "price": 800,
+      "risk": "Baixo",
+      "dividend": 0.03,
+      "previousPrice": 800,
+      "lastUpdate": 1791424078480
+    },
+    "sukuna": {
+      "name": "SUKUNA ENERGY",
+      "emoji": "🔴",
+      "price": 1500,
+      "risk": "Alto",
+      "dividend": 0.01,
+      "previousPrice": 1500,
+      "lastUpdate": 1791424078480
+    },
+    "cursed": {
+      "name": "CURSED BANK",
+      "emoji": "🟡",
+      "price": 600,
+      "risk": "Baixo",
+      "dividend": 0.04,
+      "previousPrice": 600,
+      "lastUpdate": 1791424078480
+    },
+    "jujutsu": {
+      "name": "JUJUTSU CORP",
+      "emoji": "🟣",
+      "price": 1200,
+      "risk": "Médio",
+      "dividend": 0.025,
+      "previousPrice": 1200,
+      "lastUpdate": 1791424078480
+    }
+  },
+  "users": {
+    "118730445058158@lid": {
+      "assets": {},
+      "history": [],
+      "dividends": 0,
+      "totalInvested": 0
+    }
+  }
+}
